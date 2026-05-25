@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎒 小二英文單字大挑戰！</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', 'Microsoft JhengHei', sans-serif;
+            background-color: #fef08a; /* 活潑的亮黃色背景 */
+            color: #1e293b; padding: 15px; max-width: 500px; margin: 0 auto;
+            text-align: center;
+        }
+        h1 { color: #c2410c; font-size: 28px; margin-bottom: 5px; }
+        p { font-size: 18px; margin-top: 0; color: #475569; }
+        
+        .card {
+            background-color: white; padding: 25px 20px; border-radius: 24px;
+            box-shadow: 0 8px 0px #ca8a04; margin-bottom: 20px; border: 3px solid #1e293b;
+        }
+
+        /* 1. 動物登入選單樣式 */
+        .avatar-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;
+        }
+        .avatar-btn {
+            background-color: #f8fafc; border: 3px solid #cbd5e1; border-radius: 16px;
+            padding: 15px; font-size: 20px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 0px #cbd5e1; transition: 0.1s;
+        }
+        .avatar-btn:active { transform: translateY(4px); box-shadow: none; }
+        .avatar-btn:hover { background-color: #e0f2fe; border-color: #38bdf8; }
+
+        /* 2. 挑戰區域樣式 */
+        #quizSection { display: none; }
+        .speaker-btn {
+            background-color: #38bdf8; border: 3px solid #1e293b; border-radius: 50%;
+            width: 90px; height: 90px; font-size: 40px; cursor: pointer;
+            box-shadow: 0 6px 0px #0369a1; margin: 10px auto 25px auto;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .speaker-btn:active { transform: translateY(6px); box-shadow: none; }
+
+        /* 四選一超大選項按鈕 */
+        .options-grid {
+            display: grid; grid-template-columns: 1fr; gap: 12px;
+        }
+        .option-btn {
+            width: 100%; background-color: #f1f5f9; border: 3px solid #1e293b;
+            border-radius: 16px; padding: 18px; font-size: 22px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 5px 0px #94a3b8; text-align: center;
+        }
+        .option-btn:active { transform: translateY(5px); box-shadow: none; }
+        .option-btn:nth-child(1) { background-color: #fca5a5; box-shadow: 0 5px 0px #dc2626; } /* 紅 */
+        .option-btn:nth-child(2) { background-color: #93c5fd; box-shadow: 0 5px 0px #2563eb; } /* 藍 */
+        .option-btn:nth-child(3) { background-color: #86efac; box-shadow: 0 5px 0px #16a34a; } /* 綠 */
+        .option-btn:nth-child(4) { background-color: #fde047; box-shadow: 0 5px 0px #ca8a04; } /* 黃 */
+
+        /* 3. 結果區域 */
+        #resultSection { display: none; }
+        .score-text { font-size: 48px; font-weight: bold; color: #dc2626; margin: 20px 0; }
+        .restart-btn {
+            background-color: #4ade80; border: 3px solid #1e293b; padding: 12px 24px;
+            font-size: 20px; font-weight: bold; border-radius: 12px; cursor: pointer;
+            box-shadow: 0 5px 0px #16a34a;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loginSection" class="card">
+        <h1>🎒 英文單字大挑戰</h1>
+        <p>小朋友，請點點你的名字登入喔！</p>
+        <div class="avatar-grid">
+            <button class="avatar-btn" onclick="login('小明 🦁')">🦁 小明</button>
+            <button class="avatar-btn" onclick="login('小華 🐼')">🐼 小華</button>
+            <button class="avatar-btn" onclick="login('小紅 🐰')">🐰 小紅</button>
+            <button class="avatar-btn" onclick="login('阿豪 🐻')">🐻 阿豪</button>
+            <button class="avatar-btn" onclick="login('美美 🐱')">🐱 美美</button>
+            </div>
+    </div>
+
+    <div id="quizSection" class="card">
+        <h2 style="color:#0369a1; margin-top:0;">👋 你好，<span id="currentStudent"></span></h2>
+        <p>第 <span id="questionNum">1</span> / 5 題</p>
+        
+        <p style="font-weight: bold; font-size: 20px; color: #1e293b;">👇 點點大喇叭聽聲音：</p>
+        <button class="speaker-btn" onclick="playCurrentWordAudio()">📢</button>
+
+        <div class="options-grid">
+            <button class="option-btn" id="opt0" onclick="checkAnswer(0)"></button>
+            <button class="option-btn" id="opt1" onclick="checkAnswer(1)"></button>
+            <button class="option-btn" id="opt2" onclick="checkAnswer(2)"></button>
+            <button class="option-btn" id="opt3" onclick="checkAnswer(3)"></button>
+        </div>
+    </div>
+
+    <div id="resultSection" class="card">
+        <h1>🎉 挑戰完成！</h1>
+        <p>你的終極分數是：</p>
+        <div class="score-text"><span id="finalScore">0</span> 分</div>
+        <p style="color: #16a34a; font-weight: bold;">☁️ 分數已經自動幫你傳給老師囉！</p>
+        <br>
+        <button class="restart-btn" onclick="location.reload()">再玩一次 🔄</button>
+    </div>
+
+    <script>
+        // 🌟 這裡放本週的 40 個單字庫（範例先放 5 個，你可以自由增加）
+        const wordBank = [
+            { english: "apple", chinese: "蘋果 ㄆㄧㄥˊ ㄍㄨㄛˇ" },
+            { english: "banana", chinese: "香蕉 ㄒㄧㄤ ㄐㄧㄠ" },
+            { english: "cat", chinese: "貓咪 ㄇㄠ ㄇㄧ" },
+            { english: "dog", chinese: "小狗 ㄒㄧㄠˇ ㄍㄡˇ" },
+            { english: "elephant", chinese: "大象 ㄉㄚˋ ㄒㄧㄤˋ" }
+        ];
+
+        // 🛠️ 請更換為你的 Supabase 後台資訊
+        const SUPABASE_URL = "https://hkplocvgkzyzlzhwouwd.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_9NddIO_ReMctduWhfb5unA_Kk0fDioz";
+        
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentUser = "";
+        let quizWords = []; // 本次要考的題目陣列
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        // 1. 點擊動物大頭貼登入
+        function login(studentName) {
+            currentUser = studentName;
+            document.getElementById('currentStudent').innerText = currentUser;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('quizSection').style.display = 'block';
+            
+            startQuiz();
+        }
+
+        // 2. 開始初始化題目（從單字庫隨機挑選）
+        function startQuiz() {
+            // 將單字庫隨機打亂
+            const shuffled = [...wordBank].sort(() => 0.5 - Math.random());
+            // 小二生先抽 5 題就好（你可以改成字串 slice(0, 10) 來抽10題）
+            quizWords = shuffled.slice(0, 5); 
+            currentQuestionIndex = 0;
+            score = 0;
+            
+            showQuestion();
+        }
+
+        // 3. 顯示目前題目與四選一選項
+        function showQuestion() {
+            document.getElementById('questionNum').innerText = currentQuestionIndex + 1;
+            const currentWord = quizWords[currentQuestionIndex];
+            
+            // 自動播放一次聲音，讓孩子不用點喇叭就能先聽到
+            setTimeout(() => { playCurrentWordAudio(); }, 500);
+
+            // 產生隨機的四個選項（其中一個是正確答案）
+            let options = [currentWord.chinese];
+            while (options.length < 4) {
+                const randomWord = wordBank[Math.floor(Math.random() * wordBank.length)].chinese;
+                if (!options.includes(randomWord)) {
+                    options.push(randomWord);
+                }
+            }
+            // 把選項重新打亂
+            options.sort(() => 0.5 - Math.random());
+
+            // 把選項塞進按鈕中
+            for (let i = 0; i < 4; i++) {
+                const btn = document.getElementById(`opt${i}`);
+                btn.innerText = options[i];
+                // 把正確答案的標記藏在按鈕的自訂屬性裡
+                if (options[i] === currentWord.chinese) {
+                    btn.setAttribute('data-correct', 'true');
+                } else {
+                    btn.setAttribute('data-correct', 'false');
+                }
+            }
+        }
+
+        // 🔊 呼叫電腦發音唸英文單字
+        function playCurrentWordAudio() {
+            const currentWord = quizWords[currentQuestionIndex];
+            const utterance = new SpeechSynthesisUtterance(currentWord.english);
+            utterance.lang = 'en-US'; // 英文發音
+            utterance.rate = 0.75;    // 稍微放慢一點速度，適合小二
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 4. 檢查小朋友點選的答案
+        function checkAnswer(selectedIndex) {
+            const selectedBtn = document.getElementById(`opt${selectedIndex}`);
+            const isCorrect = selectedBtn.getAttribute('data-correct') === 'true';
+
+            if (isCorrect) {
+                alert("🌟 太棒了！答對囉！");
+                score += (100 / quizWords.length); // 依題數比例加分
+            } else {
+                const correctChinese = quizWords[currentQuestionIndex].chinese;
+                alert("😢 沒關係，下一題再加油！\n(正確答案是：" + correctChinese + ")");
+            }
+
+            // 進到下一題
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizWords.length) {
+                showQuestion();
+            } else {
+                endQuizAndUpload();
+            }
+        }
+
+        // 5. 結束遊戲，自動同步到 Supabase
+        async function endQuizAndUpload() {
+            document.getElementById('quizSection').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('finalScore').innerText = score;
+
+            // 將分數打包上傳至雲端資料庫
+            const { data, error } = await supabase
+                .from('exam_tracks')
+                .insert([
+                    { 
+                        student_name: currentUser, 
+                        score: score, 
+                        subject: "英文單字抽考"
+                    }
+                ]);
+
+            if (error) {
+                console.error("雲端上傳失敗:", error);
+            }
+        }
+    </script>
+</body>
+</html>
